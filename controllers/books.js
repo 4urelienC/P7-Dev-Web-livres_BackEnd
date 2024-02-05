@@ -5,6 +5,7 @@ exports.createProd = (req, res, next) => {
   const bookObject = JSON.parse(req.body.book);
   delete bookObject._id;
   delete bookObject._userId;
+
   const book = new Prod({
     ...bookObject,
     userId: req.auth.userId,
@@ -12,8 +13,12 @@ exports.createProd = (req, res, next) => {
   });
 
   book.save()
-  .then(() => { res.status(201).json({message: 'Objet enregistré !'})})
-  .catch(error => {res.status(400).json({ error })})
+    .then(() => {
+      res.status(201).json({ message: 'Objet enregistré !' });
+    })
+    .catch(error => {
+      res.status(400).json({ error });
+    });
 };
 
 exports.modifyProd = (req, res, next) => {
@@ -23,46 +28,46 @@ exports.modifyProd = (req, res, next) => {
   } : { ...req.body };
 
   delete bookObject._userId;
-  Prod.findOne({_id: req.params.id})
+  Prod.findOne({ _id: req.params.id })
     .then((book) => {
-      if(book.userId != req.auth.userId){
-        res.status(401).json({ message: 'Non-Autorisé'})
+      if (book.userId != req.auth.userId) {
+        res.status(401).json({ message: 'Non-Autorisé' });
       } else {
-        Prod.updateOne({ _id: req.params.id}, {...bookObject, _id: req.params.id})
-        .then(() => res.status(200).json({message: 'Objet modifié !'}))
-        .catch(error => res.status(401).json({error}));
+        Prod.updateOne({ _id: req.params.id }, { ...bookObject, _id: req.params.id })
+          .then(() => res.status(200).json({ message: 'Objet modifié !' }))
+          .catch(error => res.status(401).json({ error }));
       }
     })
     .catch((error) => {
-      res.status(400).json({error});
-    })
-  };
+      res.status(400).json({ error });
+    });
+};
 
-  exports.deleteProd = (req, res, next) => {
-    Prod.findOne({ _id: req.params.id })
-      .then((book) => {
-        if (book.userId != req.auth.userId) {
-          res.status(401).json({ message: 'Non-autorisé' });
-        } else {
-          const filename = book.imageUrl.split('/images/')[1];
-          fs.unlink(`images/${filename}`, () => {
-            Prod.deleteOne({ _id: req.params.id })
-              .then(() => {res.status(200).json({ message: 'Objet supprimé !' })})
-              .catch((error) => res.status(400).json({ error }));
-          });
-        }
-      })
-      .catch((error) => res.status(400).json({ error }));
-  };
+exports.deleteProd = (req, res, next) => {
+  Prod.findOne({ _id: req.params.id })
+    .then((book) => {
+      if (book.userId != req.auth.userId) {
+        res.status(401).json({ message: 'Non-autorisé' });
+      } else {
+        const filename = book.imageUrl.split('/images/')[1];
+        fs.unlink(`images/${filename}`, () => {
+          Prod.deleteOne({ _id: req.params.id })
+            .then(() => { res.status(200).json({ message: 'Objet supprimé !' }) })
+            .catch((error) => res.status(400).json({ error }));
+        });
+      }
+    })
+    .catch((error) => res.status(400).json({ error }));
+};
 
 exports.getOneProd = (req, res, next) => {
-    Prod.findOne({ _id: req.params.id })
+  Prod.findOne({ _id: req.params.id })
     .then(prod => res.status(200).json(prod))
     .catch(error => res.status(404).json({ error }));
-  };
+};
 
 exports.getAllProd = (req, res, next) => {
-    Prod.find()
+  Prod.find()
     .then(prods => res.status(200).json(prods))
     .catch(error => res.status(400).json({ error }));
-  };
+};
