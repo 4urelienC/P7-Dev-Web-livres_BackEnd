@@ -75,41 +75,25 @@ exports.getAllProd = (req, res, next) => {
 };
 
 exports.rateBook = (req, res, next) => {
-  const bookId = req.params.id;
-  const { userId, rating } = req.body;
+  const userId = req.auth.userId;
+  const grade = req.body.rating;
 
-  // Fetch the book from the database
-  Prod.findById(bookId)
-    .then((book) => {
-      if (!book) {
-        return res.status(404).json({ message: 'Livre non trouvé' });
-      }
-
-      // Update the ratings in the book
-      const newRating = {
-        userId,
-        grade: rating,
-      };
-
-      book.ratings.push(newRating);
-
-      // Calculate new average rating
-      const totalRatings = book.ratings.reduce((sum, rating) => sum + rating.grade, 0);
-      const numberRatings = book.ratings.length;
-      const averageRating = totalRatings / numberRatings;
-
-      // Update the book with new ratings
-      book.averageRating = averageRating;
-
-      // Save the updated book
-      return book.save();
-    })
-    .then((updatedBook) => {
-      res.status(200).json({ message: 'Note ajoutée avec succès', book: updatedBook });
-    })
-    .catch((error) => {
-      res.status(500).json({ error });
-    });
+  if (!grade || grade < 0 || grade > 5) {
+      return res.status(400).json({ message: 'Note invalide !' });
+  }
+  Prod.findOne({ _id: req.params.id })
+      .then(book => {
+          const userRating = book.ratings.find(rating => rating.userId === userId);
+          if (userRating) {
+              return res.status(400).json({ message: 'Vous avez déjà noté ce livre !' });
+          }
+          book.ratings.push({ userId, grade });
+          const averageRating = (book.ratings.reduce((acc, rating) => acc + rating.grade, 0) / book.ratings.length).toFixed(1);
+          book.averageRating = parseFloat(averageRating); 
+          return book.save();
+      })
+      .then(book => res.status(200).json(book))
+      .catch(error => res.status(500).json({ erreur: error })); 
 };
 
 exports.getBestProd = (req, res, next) => {
